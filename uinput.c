@@ -53,9 +53,9 @@ int init_uinput(void)
   struct uinput_user_dev uidev;
   int i;
 
-  fd = open("/dev/input/uinput", O_WRONLY | O_NONBLOCK);
+  fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if(fd < 0)
-    die("error: open");
+    die("/dev/uinput");
 
   if(ioctl(fd, UI_SET_EVBIT, EV_KEY) < 0)
     die("error: ioctl");

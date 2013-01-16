@@ -53,6 +53,8 @@ int main(int argc, char *argv[])
   init_config();
   //test_config(); exit(0);
 
+  printf("init uinput\n");
+
   if(init_uinput() == 0){
     sleep(1);
     //test_uinput();
