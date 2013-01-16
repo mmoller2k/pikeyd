@@ -7,12 +7,12 @@
    Copyright (C) 2013 Michael Moller.
    This file is part of the Universal Raspberry Pi GPIO keyboard daemon.
 
-   The GNU C Library is free software; you can redistribute it and/or
+   This software is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
 
-   The GNU C Library is distributed in the hope that it will be useful,
+   The software is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
@@ -78,22 +78,23 @@ void daemonKill(char *pidfile)
     perror(pidfile);
   }
   else{
-    read(pid_fd, str, 10);
-    close(pid_fd);
-    pid = strtol(str, NULL, 0);
-    if(pid){
-      printf("terminating %d\n", pid);
-      n = kill(pid, SIGTERM);
-      if(n<0){
-	perror("kill");
+    if( read(pid_fd, str, 10) > 0 ){
+      pid = strtol(str, NULL, 0);
+      if(pid){
+	printf("terminating %d\n", pid);
+	n = kill(pid, SIGTERM);
+	if(n<0){
+	  perror("kill");
+	}
       }
     }
+    close(pid_fd);
   }
 }
 
 void daemonize(char *rundir, char *pidfile)
 {
-  int pid, sid, i;
+  int pid, sid, i, r;
   char str[10];
   struct sigaction newSA;
   sigset_t newSS;
@@ -149,7 +150,9 @@ void daemonize(char *rundir, char *pidfile)
   close(STDOUT_FILENO);
   close(STDERR_FILENO);
 
-  chdir(rundir);
+  if( chdir(rundir) < 0 ){
+    perror(rundir);
+  }
 
   /* only one at a time */
   pid_lock_file = pidfile;
@@ -164,7 +167,9 @@ void daemonize(char *rundir, char *pidfile)
     exit(EXIT_FAILURE);
   }
   sprintf(str, "%d\n", getpid());
-  write(pid_fd, str, strlen(str));
+  if( write(pid_fd, str, strlen(str)) < 0 ){
+    perror(pidfile);
+  }
 
   syslog(LOG_INFO, "Daemon running.");
 }

@@ -1,5 +1,11 @@
+CROSS=yes
 PREFIX=arm-linux-gnueabihf
 TOOLS=$(HOME)/RPi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian
 TOOLS_A=$(TOOLS)/$(PREFIX)
 TOOLS_B=$(TOOLS)/lib/gcc/$(PREFIX)/4.7.2
 TOOLS_C=$(TOOLS)/libexec/gcc/$(PREFIX)/4.7.2
+
+PATH += :$(TOOLS)/bin
+CC := $(PREFIX)-gcc
+LDFLAGS := -L$(TOOLS_A)/lib -L$(TOOLS_A)/libc/lib -L$(TOOLS_A)/libc/lib/arm-linux-gnueabihf -L$(TOOLS_B) -L$(TOOLS_C)
+INCLUDE := -I$(TOOLS_A)/include -I$(TOOLS_A)/libc/usr/include -I$(TOOLS_B)/include-fixed -I$(TOOLS_B)/include -I$(TOOLS_B)/finclude
