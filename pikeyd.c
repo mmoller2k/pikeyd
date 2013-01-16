@@ -1,0 +1,93 @@
+/**** pikeyd.c *****************************/
+/* M. Moller   2013-01-16                  */
+/*   Universal RPi GPIO keyboard daemon    */
+/*******************************************/
+
+/*
+   Copyright (C) 2013 Michael Moller.
+   This file is part of the Universal Raspberry Pi GPIO keyboard daemon.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, write to the Free
+   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   02111-1307 USA.  
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "joy_RPi.h"
+
+static void showHelp(void);
+static void showVersion(void);
+
+int main(int argc, char *argv[])
+{
+  if(argc>1){
+    if(!strcmp(argv[1], "-d")){
+      daemonize("/tmp", "/tmp/pikeyd.pid");
+    }
+    else if(!strcmp(argv[1], "-k")){
+      daemonKill("/tmp/pikeyd.pid");
+      exit(0);
+    }
+    else if(!strcmp(argv[1], "-v")){
+      showVersion();
+      exit(0);
+    }
+    else if(!strcmp(argv[1], "-h")){
+      showHelp();
+      exit(0);
+    }
+  }
+
+  init_config();
+
+  if(init_uinput() == 0){
+    sleep(2);
+    test_uinput();
+    close_uinput();
+  }
+
+#if 0
+  if(joy_RPi_init()>=0){
+
+    for(;;){
+      joy_RPi_poll();
+      usleep(4000);
+    }
+
+    joy_RPi_exit();
+  }
+#endif
+
+  return 0;
+}
+
+static void showHelp(void)
+{
+  printf("Usage: pikeyd [option]\n");
+  printf("Options:\n");
+  printf("  -d    run as daemon\n");
+  printf("  -k    try to terminate running daemon\n");
+  printf("  -v    version\n");
+  printf("  -h    this help\n");
+}
+
+static void showVersion(void)
+{
+  printf("pikeyd 1.0 (Jan 2013)\n");
+  printf("The Universal Raspberry Pi GPIO keyboard daemon.\n");
+  printf("Copyright (C) 2013 Michael Moller.\n");
+  printf("This is free software; see the source for copying conditions.  There is NO\n");
+  printf("warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+}
