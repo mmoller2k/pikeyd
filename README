@@ -1,0 +1,18 @@
+pikeyd 1.0 (Jan 2013)
+The Universal Raspberry Pi GPIO keyboard daemon.
+Copyright (C) 2013 Michael Moller.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+This daemon uses less than 1% of the RPi CPU.
+It polls and debounces the configured GPIO inputs,
+and emits uinput events to simulate the keyboard.
+Each GPIO contact can emit a sequence of keyboard characters.
+Configuration is stored in either ~/.pikeyd.conf or /etc/pikeyd.conf
+
+Usage: pikeyd [option]
+Options:
+  -d    run as daemon
+  -k    try to terminate running daemon
+  -v    version
+  -h    this help
