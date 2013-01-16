@@ -1,0 +1,5 @@
+PREFIX=arm-linux-gnueabihf
+TOOLS=$(HOME)/RPi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian
+TOOLS_A=$(TOOLS)/$(PREFIX)
+TOOLS_B=$(TOOLS)/lib/gcc/$(PREFIX)/4.7.2
+TOOLS_C=$(TOOLS)/libexec/gcc/$(PREFIX)/4.7.2
