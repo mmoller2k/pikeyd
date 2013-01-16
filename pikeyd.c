@@ -12,7 +12,7 @@
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
 
-   This software is distributed in the hope that it will be useful,
+   The software is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
@@ -51,24 +51,24 @@ int main(int argc, char *argv[])
   }
 
   init_config();
+  //test_config(); exit(0);
 
   if(init_uinput() == 0){
-    sleep(2);
-    test_uinput();
-    close_uinput();
-  }
+    sleep(1);
+    //test_uinput();
 
-#if 0
-  if(joy_RPi_init()>=0){
+    if(joy_RPi_init()>=0){
 
-    for(;;){
-      joy_RPi_poll();
-      usleep(4000);
+      for(;;){
+	joy_RPi_poll();
+	usleep(4000);
+      }
+
+      joy_RPi_exit();
     }
 
-    joy_RPi_exit();
+    close_uinput();
   }
-#endif
 
   return 0;
 }

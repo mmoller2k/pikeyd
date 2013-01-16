@@ -7,7 +7,7 @@
    Copyright (C) 2013 Michael Moller.
    This file is part of the Universal Raspberry Pi GPIO keyboard daemon.
 
-   This software is free software; you can redistribute it and/or
+   This is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
@@ -46,6 +46,8 @@ static gpio_key_s *get_event(gpio_key_s *ev, int idx);
 
 static gpio_key_s *gpio_key[NUM_GPIO];
 static gpio_key_s *last_gpio_key = NULL;
+static int gpios[NUM_GPIO];
+static int num_gpios_used=0;
 
 static int SP;
 
@@ -97,6 +99,15 @@ int init_config(void)
   if(fp){
     fclose(fp);
   }
+
+  n=0;
+  for(i=0; i<NUM_GPIO; i++){
+    if(gpio_key[i]){
+      gpios[n] = gpio_key[i]->gpio;
+      n++;
+    }
+  }
+  num_gpios_used = n;
 
   return 0;
 }
@@ -207,6 +218,13 @@ void test_config(void)
 {
   int e, i, k;
   e=21;
+
+  for(i=0; i<NUM_GPIO; i++){
+    if(gpio_key[i]){
+      printf(" %d\n", i);
+    }
+  }
+
   while( got_more_keys(e) ){
     k = get_next_key(e);
     printf("%d: EV %d = %d\n", i++, e, k);
@@ -219,4 +237,14 @@ void test_config(void)
     printf("%d: EV %d = %d\n", i++, e, k);
     if(i>8)break;
   }
+}
+
+int gpios_used(void)
+{
+  return num_gpios_used;
+}
+
+int gpio_pin(int n)
+{
+  return gpios[n % NUM_GPIO];
 }
