@@ -1,4 +1,4 @@
-/**** config.h *****************************/
+/**** iic.h ********************************/
 /* M. Moller   2013-01-16                  */
 /*   Universal RPi GPIO keyboard daemon    */
 /*******************************************/
@@ -23,26 +23,13 @@
    02111-1307 USA.  
 */
 
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
+#ifndef _IIC_H_
+#define _IIC_H_
 
-typedef struct{
-  char name[32];
-  int code;
-}key_names_s;
-
-int init_config(void);
-void test_config(void);
-int get_event_key(int gpio, int idx);
-int get_next_key(int gpio);
-int got_more_keys(int gpio);
-void restart_keys(void);
-int gpios_used(void);
-int gpio_pin(int n);
-int is_xio(int gpio);
-int get_curr_key(void);
-int get_curr_xio(int *caddr, int *regno);
-
+int init_iic(void);
+int connect_iic(int devAddr);
+void poll_iic(int chip_addr, int regno);
+void test_iic(void);
+void close_iic(void);
 
 #endif
-

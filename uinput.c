@@ -198,13 +198,20 @@ static int sendSync(void)
 int send_gpio_keys(int gpio, int value)
 {
   int k;
+  int c,n;
   restart_keys();
   while( got_more_keys(gpio) ){
     k = get_next_key(gpio);
-    sendKey(k, value);
-    if(value && got_more_keys(gpio)){
-      /* release the current key, so the next one can be pressed */
-      sendKey(k, 0);
+    if(k<0x300){
+      sendKey(k, value);
+      if(value && got_more_keys(gpio)){
+	/* release the current key, so the next one can be pressed */
+	sendKey(k, 0);
+      }
+    }
+    else if(is_xio(gpio)){
+      get_curr_xio(&c, &n);
+      poll_iic(c,n);
     }
   }
   return k;

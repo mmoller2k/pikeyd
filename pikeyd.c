@@ -26,15 +26,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "joy_RPi.h"
+#include "iic.h"
 
 static void showHelp(void);
 static void showVersion(void);
 
 int main(int argc, char *argv[])
 {
+  int en_daemonize = 0;
+
   if(argc>1){
     if(!strcmp(argv[1], "-d")){
-      daemonize("/tmp", "/tmp/pikeyd.pid");
+      en_daemonize = 1;
+      //daemonize("/tmp", "/tmp/pikeyd.pid");
     }
     else if(!strcmp(argv[1], "-k")){
       daemonKill("/tmp/pikeyd.pid");
@@ -51,7 +55,12 @@ int main(int argc, char *argv[])
   }
 
   init_config();
-  //test_config(); exit(0);
+  test_config(); exit(0);
+
+  init_iic();
+  connect_iic(0x50);
+  test_iic();
+  close_iic();
 
   printf("init uinput\n");
 
@@ -60,6 +69,9 @@ int main(int argc, char *argv[])
     //test_uinput();
 
     if(joy_RPi_init()>=0){
+      if(en_daemonize){
+	daemonize("/tmp", "/tmp/pikeyd.pid");
+      }
 
       for(;;){
 	joy_RPi_poll();

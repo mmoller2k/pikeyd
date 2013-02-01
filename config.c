@@ -30,6 +30,7 @@
 
 #define NUM_GPIO 32
 #define MAX_LN 128
+#define MAX_XIO_DEVS 16
 
 extern key_names_s key_names[];
 
@@ -37,17 +38,30 @@ typedef struct _gpio_key{
   int gpio;
   int idx;
   int key;
+  int xio; /* -1 for direct gpio */
   struct _gpio_key *next;
 }gpio_key_s;
 
+/* each I/O expander can have 8 pins */
+typedef struct{
+  char name[20];
+  int addr;
+  int regno;
+  int configured;
+  gpio_key_s *key[8];
+}xio_dev_s;
+
 static int find_key(const char *name);
-static void add_event(gpio_key_s **ev, int gpio, int key);
+static void add_event(gpio_key_s **ev, int gpio, int key, int xio);
 static gpio_key_s *get_event(gpio_key_s *ev, int idx);
+static int find_xio(const char *name);
 
 static gpio_key_s *gpio_key[NUM_GPIO];
 static gpio_key_s *last_gpio_key = NULL;
 static int gpios[NUM_GPIO];
 static int num_gpios_used=0;
+static xio_dev_s xio_dev[MAX_XIO_DEVS];
+static int xio_count = 0;
 
 static int SP;
 
@@ -56,15 +70,15 @@ int init_config(void)
   int i,k,n;
   FILE *fp;
   char ln[MAX_LN];
-  char name[32];
+  char name[32], xname[32];
   char conffile[80];
-  int gpio;
+  int gpio,caddr,regno;
 
   for(i=0;i<NUM_GPIO;i++){
     gpio_key[i] = NULL;
   }
 
-  /* search for the conf file in ~/.piked.conf and /etc/pikeyd.conf */
+  /* search for the conf file in ~/.pikeyd.conf and /etc/pikeyd.conf */
   sprintf(conffile, "%s/.pikeyd.conf", getenv("HOME"));
   fp = fopen(conffile, "r");
   if(!fp){
@@ -87,10 +101,49 @@ int init_config(void)
 	if(n>1){
 	  k = find_key(name);
 	  if(k){
-	    //printf("[%s] = %d (%d)\n",name, gpio, key_names[k].code);
-	    SP=0;
-	    add_event(&gpio_key[gpio], gpio, key_names[k].code);
+	    printf("%04x:[%s] = %d/%d (%d)\n",k,name, gpio, n, key_names[k].code);
+	    if(key_names[k].code < 0x300){
+	      SP=0;
+	      add_event(&gpio_key[gpio], gpio, key_names[k].code, -1);
+	    }
 	  }
+	  else if(strstr(ln, "XIO") == ln){
+	    n=sscanf(ln, "%s %d/%i:%i", name, &gpio, &caddr, &regno);
+	    if(n > 2){
+	      printf("XIO entry: %s %d %02x:%02x\n", name, gpio, caddr, regno);
+	      strncpy(xio_dev[xio_count].name, name, 20); 
+	      xio_dev[xio_count].addr = caddr;
+	      xio_dev[xio_count].regno = regno;
+	      for(i=0;i<8;i++){
+		xio_dev[xio_count].key[i] = NULL;
+	      }
+	      add_event(&gpio_key[gpio], gpio, 0x1000 + xio_count, xio_count);
+	      xio_count++;
+	      xio_count %= 16;
+	    }
+	  }
+	  else{
+	    printf("Unknown entry (%s)\n", ln);
+	  }
+	}
+	else if(n>0){ /* I/O expander pin-entries */
+	  n=sscanf(ln, "%s %[^:]:%i", name, xname, &gpio);
+	  if(n>2){
+	    printf("XIO event %s at (%s):%d\n", name, xname, gpio);
+	    if( (n = find_xio(xname)) >= 0 ){
+	      k = find_key(name);
+	      if(k){
+		add_event(&xio_dev[n].key[gpio], gpio, key_names[k].code, -1);
+		printf(" Added event %s on %s:%d\n", name, xname, gpio);
+	      }
+	    }
+	  }
+	  else{
+	    printf("Bad entry (%s)\n", ln);
+	  }
+	}
+	else{
+	  printf("Too few arguments (%s)\n", ln);
 	}
       }
     }
@@ -112,6 +165,19 @@ int init_config(void)
   return 0;
 }
 
+static int find_xio(const char *name)
+{
+  int i=0;
+  while(i<xio_count){
+    if(!strncmp(xio_dev[i].name, name, 32))break;
+    i++;
+  }
+  if(i >= xio_count){
+    i = -1;
+  }
+  return i;
+}
+
 static int find_key(const char *name)
 {
   int i=0;
@@ -119,15 +185,18 @@ static int find_key(const char *name)
     if(!strncmp(key_names[i].name, name, 32))break;
     i++;
   }
+  if(key_names[i].code < 0){
+    i = 0;
+  }
   return i;
 }
 
-static void add_event(gpio_key_s **ev, int gpio, int key)
+static void add_event(gpio_key_s **ev, int gpio, int key, int xio)
 {
   if(*ev){
     SP++;
     /* Recursive call to add the next link in the list */
-    add_event(&(*ev)->next, gpio, key);
+    add_event(&(*ev)->next, gpio, key, xio);
   }
   else{
     *ev = malloc(sizeof(gpio_key_s));
@@ -138,6 +207,7 @@ static void add_event(gpio_key_s **ev, int gpio, int key)
       (*ev)->gpio = gpio;
       (*ev)->idx = SP;
       (*ev)->key = key;
+      (*ev)->xio = xio;
       (*ev)->next = NULL;
     }
   }
@@ -184,6 +254,29 @@ int got_more_keys(int gpio)
 void restart_keys(void)
 {
     last_gpio_key = NULL;
+}
+
+int get_curr_key(void)
+{
+  int r=0;
+  if(last_gpio_key){
+    r=last_gpio_key->key;
+  }
+  return r;
+}
+
+int get_curr_xio(int *caddr, int *regno)
+{
+  int n;
+  *caddr=0;
+  if(last_gpio_key){
+    n=last_gpio_key->xio;
+    if(n>=0){
+      *caddr = xio_dev[n].addr;
+      *regno = xio_dev[n].regno;
+    }
+  }
+  return *caddr;
 }
 
 int get_next_key(int gpio)
@@ -248,3 +341,13 @@ int gpio_pin(int n)
 {
   return gpios[n % NUM_GPIO];
 }
+
+int is_xio(int gpio)
+{
+  int r=0;
+  if( gpio_key[gpio] && (gpio_key[gpio]->xio >= 0) ){
+    r=1;
+  }
+  return r;
+}
+
