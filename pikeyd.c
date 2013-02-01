@@ -55,12 +55,13 @@ int main(int argc, char *argv[])
   }
 
   init_config();
-  test_config(); exit(0);
+  //test_config(); exit(0);
 
   init_iic();
   connect_iic(0x50);
   test_iic();
   close_iic();
+  exit(0);
 
   printf("init uinput\n");
 

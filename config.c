@@ -70,6 +70,7 @@ int init_config(void)
   int i,k,n;
   FILE *fp;
   char ln[MAX_LN];
+  int lnno = 0;
   char name[32], xname[32];
   char conffile[80];
   int gpio,caddr,regno;
@@ -95,22 +96,24 @@ int init_config(void)
 
   while(fp && !feof(fp)){
     if(fgets(ln, MAX_LN, fp)){
+      lnno++;
       if(strlen(ln) > 1){
 	if(ln[0]=='#')continue;
 	n=sscanf(ln, "%s %d", name, &gpio);
 	if(n>1){
 	  k = find_key(name);
 	  if(k){
-	    printf("%04x:[%s] = %d/%d (%d)\n",k,name, gpio, n, key_names[k].code);
+	    //printf("%d %04x:[%s] = %d/%d (%d)\n",lnno, k,name, gpio, n, key_names[k].code);
 	    if(key_names[k].code < 0x300){
 	      SP=0;
 	      add_event(&gpio_key[gpio], gpio, key_names[k].code, -1);
 	    }
 	  }
+	  /* expander declarations start with "XIO" */
 	  else if(strstr(ln, "XIO") == ln){
 	    n=sscanf(ln, "%s %d/%i:%i", name, &gpio, &caddr, &regno);
 	    if(n > 2){
-	      printf("XIO entry: %s %d %02x:%02x\n", name, gpio, caddr, regno);
+	      //printf("%d XIO entry: %s %d %02x:%02x\n", lnno, name, gpio, caddr, regno);
 	      strncpy(xio_dev[xio_count].name, name, 20); 
 	      xio_dev[xio_count].addr = caddr;
 	      xio_dev[xio_count].regno = regno;
@@ -123,27 +126,30 @@ int init_config(void)
 	    }
 	  }
 	  else{
-	    printf("Unknown entry (%s)\n", ln);
+	    printf("Line %d. Unknown entry (%s)\n", lnno, ln);
 	  }
 	}
 	else if(n>0){ /* I/O expander pin-entries */
 	  n=sscanf(ln, "%s %[^:]:%i", name, xname, &gpio);
 	  if(n>2){
-	    printf("XIO event %s at (%s):%d\n", name, xname, gpio);
+	    //printf("%d XIO event %s at (%s):%d\n", lnno, name, xname, gpio);
 	    if( (n = find_xio(xname)) >= 0 ){
 	      k = find_key(name);
 	      if(k){
 		add_event(&xio_dev[n].key[gpio], gpio, key_names[k].code, -1);
-		printf(" Added event %s on %s:%d\n", name, xname, gpio);
+		//printf(" Added event %s on %s:%d\n", name, xname, gpio);
 	      }
+	    }
+	    else{
+	      printf("Line %d. No such expander: %s\n", lnno, xname);
 	    }
 	  }
 	  else{
-	    printf("Bad entry (%s)\n", ln);
+	    printf("Line %d. Bad entry (%s)\n", lnno, ln);
 	  }
 	}
 	else{
-	  printf("Too few arguments (%s)\n", ln);
+	  printf("Line %d. Too few arguments (%s)\n", lnno, ln);
 	}
       }
     }
