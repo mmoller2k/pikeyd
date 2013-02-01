@@ -48,6 +48,7 @@ typedef struct{
   int addr;
   int regno;
   int configured;
+  gpio_key_s *last_key;
   gpio_key_s *key[8];
 }xio_dev_s;
 
@@ -117,6 +118,7 @@ int init_config(void)
 	      strncpy(xio_dev[xio_count].name, name, 20); 
 	      xio_dev[xio_count].addr = caddr;
 	      xio_dev[xio_count].regno = regno;
+	      xio_dev[xio_count].last_key = NULL;
 	      for(i=0;i<8;i++){
 		xio_dev[xio_count].key[i] = NULL;
 	      }
@@ -271,20 +273,6 @@ int get_curr_key(void)
   return r;
 }
 
-int get_curr_xio(int *caddr, int *regno)
-{
-  int n;
-  *caddr=0;
-  if(last_gpio_key){
-    n=last_gpio_key->xio;
-    if(n>=0){
-      *caddr = xio_dev[n].addr;
-      *regno = xio_dev[n].regno;
-    }
-  }
-  return *caddr;
-}
-
 int get_next_key(int gpio)
 {
   static int lastgpio=-1;
@@ -357,3 +345,49 @@ int is_xio(int gpio)
   return r;
 }
 
+int get_curr_xio(void)
+{
+  int n;
+  int r = -1;
+  if(last_gpio_key){
+    n=last_gpio_key->xio;
+    if(n>=0){
+      r = n;
+    }
+  }
+  return r;
+}
+
+void get_xio_addr(int xio, int *addr, int *regno)
+{
+  *addr = xio_dev[xio].addr;
+  *regno = xio_dev[xio].regno;
+}
+
+int get_next_xio_key(int xio, int gpio)
+{
+  static int lastgpio=-1;
+  static int idx = 0;
+  gpio_key_s *ev;
+  int k;
+
+  ev = xio_dev[xio].last_key;
+  if( (ev == NULL) || (gpio != lastgpio) ){
+    /* restart at the beginning after reaching the end, or reading a new gpio */
+    ev = gpio_key[gpio];
+    lastgpio = gpio;
+  }
+  else{
+    /* get successive events while retrieving the same gpio */
+    ev = xio_dev[xio].last_key->next;
+  }
+  xio_dev[xio].last_key = ev;
+
+  if(ev){
+    k = ev->key;
+  }
+  else{
+    k = 0;
+  }
+  return k;
+}

@@ -41,7 +41,10 @@ int gpios_used(void);
 int gpio_pin(int n);
 int is_xio(int gpio);
 int get_curr_key(void);
-int get_curr_xio(int *caddr, int *regno);
+int get_curr_xio(void);
+void get_xio_addr(int xio, int *addr, int *regno);
+int get_next_xio_key(int xio, int gpio);
+
 
 
 #endif
