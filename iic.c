@@ -25,13 +25,14 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <string.h>
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
 #include "iic.h"
 
 static int fd=0;
-static char buffer[8];
-static const char devName[]="/dev/i2c-0";
+static char buffer[12];
+static const char devName[]="/dev/i2c-1";
 
 int init_iic(void)
 {
@@ -54,20 +55,41 @@ int connect_iic(int devAddr)
   return 0;
 }
 
-void poll_iic(int chip_addr, int regno)
+void poll_iic(int xio)
 {
+  int chip_addr, regno;
+  iodev_e type;
+  get_xio_parm(xio, &type, &chip_addr, &regno);
   buffer[0] = regno;
-  connect_iic(chip_addr);
+  //connect_iic(chip_addr);
   write(fd, buffer, 1);
   read(fd, buffer, 1);
+  //printf("iic: %02x\n", buffer[0]);
+  handle_iic_event(xio, buffer[0]);
+  //test_iic(chip_addr);
 }
 
-void test_iic(void)
+int write_iic(int devAddr, int regno, char *buf, int n)
 {
-  int devAddr = 0x50;
+  int r;
+  connect_iic(devAddr);
+  buffer[0]=regno;
+  memcpy(&buffer[1], buf, n);
+
+  if( (r = write(fd, buffer, n+1)) < 0 ){
+    perror("iic write data");
+  }
+  return r;
+}
+
+
+void test_iic(int devAddr)
+{
   int i,n;
 
   buffer[0] = 0;
+
+  connect_iic(devAddr);
 
   if( (n = write(fd, buffer, 1)) < 0 ){
     perror("Error writing to i2c");
@@ -76,14 +98,15 @@ void test_iic(void)
     printf("Wrote %d bytes to device %02x on %s\n", n, devAddr, devName);
   }
 
-  if( (n = read(fd, buffer, 8)) < 0 ){
+  if( (n = read(fd, buffer, 11)) < 0 ){
     perror("Error reading from i2c");
   }
   else{
     printf("Read %d bytes\n",n);
     for(i=0;i<n;i++){
-      printf("  [%d] = %02x\n", i, (unsigned char)buffer[i]);
+      printf("  %02x", (unsigned char)buffer[i]);
     }
+    printf("\n");
   }
 }
 
@@ -93,3 +116,42 @@ void close_iic(void)
     close(fd);
   }
 }
+
+/* don't use */
+#if 0
+iodev_e dev_type(int devAddr)
+{
+  iodev_e r = IO_UNK;
+  const char sig[][4]={ /* i2c device signatures */
+    {0xff, 0, 0, 0}, /* MCP23008 */
+    {0xff, 0xff, 0, 0} /* MCP23017 */
+  };
+  int n;
+
+  connect_iic(devAddr);
+  buffer[0] = 0;
+
+  if( (n = write(fd, buffer, 1)) < 0 ){
+    perror("Error writing to i2c");
+  }
+
+  if( (n = read(fd, buffer, 4)) < 0 ){
+    perror("Error reading from i2c");
+  }
+  else{
+    if( memcmp(buffer, sig[0]) == 0 ){
+      printf("Device is MCP23008\n");
+      r = IO_MCP23008;
+    }
+    else if( memcmp(buffer, sig[1]) == 0 ){
+      printf("Device is MCP23017\n");
+      r = IO_MCP23017;
+    }
+    else{
+      printf("Device not identified\n");
+    }
+  }
+  return r;
+}
+#endif
+

@@ -54,25 +54,23 @@ int main(int argc, char *argv[])
     }
   }
 
-  init_config();
-  //test_config(); exit(0);
+  if(en_daemonize){
+    daemonize("/tmp", "/tmp/pikeyd.pid");
+  }
 
   init_iic();
-  connect_iic(0x50);
-  test_iic();
-  close_iic();
-  exit(0);
+  init_config();
 
-  printf("init uinput\n");
+  //test_config(); exit(0);
+
+  //test_iic(0x20);  close_iic();  exit(0);
+
+  //printf("init uinput\n");
 
   if(init_uinput() == 0){
     sleep(1);
     //test_uinput();
-
     if(joy_RPi_init()>=0){
-      if(en_daemonize){
-	daemonize("/tmp", "/tmp/pikeyd.pid");
-      }
 
       for(;;){
 	joy_RPi_poll();

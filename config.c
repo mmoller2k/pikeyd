@@ -27,10 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "iic.h"
 
 #define NUM_GPIO 32
 #define MAX_LN 128
-#define MAX_XIO_DEVS 16
+#define MAX_XIO_DEVS 8
+#define MAX_XIO_PINS 8
 
 extern key_names_s key_names[];
 
@@ -45,9 +47,11 @@ typedef struct _gpio_key{
 /* each I/O expander can have 8 pins */
 typedef struct{
   char name[20];
+  iodev_e type;
   int addr;
   int regno;
-  int configured;
+  int inmask;
+  int lastvalue;
   gpio_key_s *last_key;
   gpio_key_s *key[8];
 }xio_dev_s;
@@ -56,6 +60,7 @@ static int find_key(const char *name);
 static void add_event(gpio_key_s **ev, int gpio, int key, int xio);
 static gpio_key_s *get_event(gpio_key_s *ev, int idx);
 static int find_xio(const char *name);
+static void setup_xio(int xio);
 
 static gpio_key_s *gpio_key[NUM_GPIO];
 static gpio_key_s *last_gpio_key = NULL;
@@ -68,7 +73,7 @@ static int SP;
 
 int init_config(void)
 {
-  int i,k,n;
+  int i,j,k,n;
   FILE *fp;
   char ln[MAX_LN];
   int lnno = 0;
@@ -112,17 +117,34 @@ int init_config(void)
 	  }
 	  /* expander declarations start with "XIO" */
 	  else if(strstr(ln, "XIO") == ln){
-	    n=sscanf(ln, "%s %d/%i:%i", name, &gpio, &caddr, &regno);
+	    n=sscanf(ln, "%s %d/%i/%s", name, &gpio, &caddr, xname);
 	    if(n > 2){
-	      //printf("%d XIO entry: %s %d %02x:%02x\n", lnno, name, gpio, caddr, regno);
-	      strncpy(xio_dev[xio_count].name, name, 20); 
+	      //printf("%d XIO entry: %s %d %02x %s\n", lnno, name, gpio, caddr, xname);
+	      strncpy(xio_dev[xio_count].name, name, 20);
 	      xio_dev[xio_count].addr = caddr;
-	      xio_dev[xio_count].regno = regno;
 	      xio_dev[xio_count].last_key = NULL;
+	      xio_dev[xio_count].lastvalue = 0xff;
 	      for(i=0;i<8;i++){
 		xio_dev[xio_count].key[i] = NULL;
 	      }
-	      add_event(&gpio_key[gpio], gpio, 0x1000 + xio_count, xio_count);
+	      if( !strncmp(xname, "MCP23008", 8) ){
+		xio_dev[xio_count].type = IO_MCP23008;
+		xio_dev[xio_count].regno = 0x09;
+	      }
+	      else if( !strncmp(xname, "MCP23017A", 9) ){
+		xio_dev[xio_count].type = IO_MCP23017A;
+		xio_dev[xio_count].regno = 0x09;
+	      }
+	      else if( !strncmp(xname, "MCP23017B", 9) ){
+		xio_dev[xio_count].type = IO_MCP23017A;
+		xio_dev[xio_count].regno = 0x19;
+	      }
+	      else{
+		xio_dev[xio_count].type = IO_UNK;
+		xio_dev[xio_count].regno = 0;
+	      }
+
+	      add_event(&gpio_key[gpio], gpio, 0, xio_count);
 	      xio_count++;
 	      xio_count %= 16;
 	    }
@@ -169,6 +191,16 @@ int init_config(void)
     }
   }
   num_gpios_used = n;
+
+  for(j=0;j<xio_count;j++){
+    for(i=0;i<8;i++){
+      if(xio_dev[j].key[i]){
+	xio_dev[j].inmask |= 1<<i;
+      }
+    }
+    setup_xio(j);
+  }
+
 
   return 0;
 }
@@ -345,7 +377,44 @@ int is_xio(int gpio)
   return r;
 }
 
-int get_curr_xio(void)
+static void setup_xio(int xio)
+{
+  char cfg_dat[]={
+    0xff, //IODIR
+    0x00, //IPOL
+    xio_dev[xio].inmask,  //GPINTEN - enable interrupts for defined pins
+    0x00, //DEFVAL
+    0x00, //INTCON - monitor changes
+    0x84, //IOCON - interrupt pin is open collector;
+    0xff, //GPPU - enable all pull-ups
+  };
+  char buf[]={0x84};
+  int addr = xio_dev[xio].addr;
+
+  /* first ensure that the bank bit is set */
+  if( write_iic(addr, 0x0a, buf, 1) < 0 ){
+    perror("iic init write 1\n");
+  }
+  buf[0]=0; /* reset OLATA if incorrectly addressed before */
+  if( write_iic(addr, 0x0a, buf, 1) < 0 ){
+    perror("iic init write 2\n");
+  }
+
+  switch(xio_dev[xio].type){
+  case IO_MCP23008:
+  case IO_MCP23017A:
+    write_iic(addr, 0, cfg_dat, 7); 
+    printf("Configuring MCP23008\n");
+    break;
+  case IO_MCP23017B:
+    write_iic(addr, 0x10, cfg_dat, 7); 
+    break;
+  default:
+    break;
+  }
+}
+
+int get_curr_xio_no(void)
 {
   int n;
   int r = -1;
@@ -358,10 +427,24 @@ int get_curr_xio(void)
   return r;
 }
 
-void get_xio_addr(int xio, int *addr, int *regno)
+void get_xio_parm(int xio, iodev_e *type, int *addr, int *regno)
 {
+  *type = xio_dev[xio].type;
   *addr = xio_dev[xio].addr;
   *regno = xio_dev[xio].regno;
+}
+
+int got_more_xio_keys(int xio, int gpio)
+{
+  if( xio_dev[xio].last_key == NULL ){
+    return (xio_dev[xio].key[gpio] != NULL);
+  }
+  else if( xio_dev[xio].last_key->next == NULL){
+    return 0;
+  }
+  else{
+    return 1;
+  }
 }
 
 int get_next_xio_key(int xio, int gpio)
@@ -374,7 +457,7 @@ int get_next_xio_key(int xio, int gpio)
   ev = xio_dev[xio].last_key;
   if( (ev == NULL) || (gpio != lastgpio) ){
     /* restart at the beginning after reaching the end, or reading a new gpio */
-    ev = gpio_key[gpio];
+    ev = xio_dev[xio].key[gpio];
     lastgpio = gpio;
   }
   else{
@@ -391,3 +474,38 @@ int get_next_xio_key(int xio, int gpio)
   }
   return k;
 }
+
+void restart_xio_keys(int xio)
+{
+    xio_dev[xio].last_key = NULL;
+}
+
+void handle_iic_event(int xio, int value)
+{
+  int ival = value & xio_dev[xio].inmask;
+  int xval = ival ^ xio_dev[xio].lastvalue;
+  int f,i,k,x;
+
+  xio_dev[xio].lastvalue = ival;
+
+  for (i = 0; i < MAX_XIO_PINS; i++){
+    restart_xio_keys(xio);
+    while(got_more_xio_keys(xio, i)){
+      k = get_next_xio_key(xio, i);
+      x = !!(ival & (1 << i)); /* is the pin high or low? */
+      f = xval & (1 << i); /* has the pin changed? */
+      if(f){
+	//printf("(%02x) sending %d/%d: %x=%d\n", ival, xio, i, k, x);
+	sendKey(k, !x); /* switch is active low */
+	if(x && got_more_xio_keys(xio, i)){
+	  /* release the current key, so the next one can be pressed */
+	  //printf("sending %x=%d\n", k,x);
+	  sendKey(k, 0);
+	}
+      }
+    }
+    //printf("Next pin\n");
+  }
+  //printf("handler exit\n");
+}
+

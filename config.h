@@ -26,6 +26,8 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+#include "iic.h"
+
 typedef struct{
   char name[32];
   int code;
@@ -36,14 +38,17 @@ void test_config(void);
 int get_event_key(int gpio, int idx);
 int get_next_key(int gpio);
 int got_more_keys(int gpio);
+int got_more_xio_keys(int xio, int gpio);
 void restart_keys(void);
 int gpios_used(void);
 int gpio_pin(int n);
 int is_xio(int gpio);
 int get_curr_key(void);
-int get_curr_xio(void);
-void get_xio_addr(int xio, int *addr, int *regno);
+int get_curr_xio_no(void);
+void get_xio_parm(int xio, iodev_e *type, int *addr, int *regno);
 int get_next_xio_key(int xio, int gpio);
+void restart_xio_keys(int xio);
+void handle_iic_event(int xio, int value);
 
 
 

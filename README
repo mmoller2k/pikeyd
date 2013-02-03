@@ -16,3 +16,12 @@ Options:
   -k    try to terminate running daemon
   -v    version
   -h    this help
+
+Install notes.
+If you're using Raspbian wheezy add the folowing to /etc/modules:
+uinput
+i2c-dev
+
+edit /etc/modprobe.d/raspi-blacklist.conf
+and remove or comment out
+#blacklist i2c-bcm2708

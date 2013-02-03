@@ -30,5 +30,6 @@ int init_uinput(void);
 int test_uinput(void);
 int close_uinput(void);
 int send_gpio_keys(int gpio, int value);
+int sendKey(int key, int value);
 
 #endif

@@ -50,7 +50,7 @@
 #define JOY_AXES              2
 #define JOY_DIRS              2
 
-#define BOUNCE_TIME 4
+#define BOUNCE_TIME 2
 
 // Raspberry Pi V1 GPIO
 //static int GPIO_Pin[] = { 0, 1, 4, 7, 8, 9, 10, 11, 14, 15, 17, 18, 21, 22, 23, 24, 25 };

@@ -26,10 +26,19 @@
 #ifndef _IIC_H_
 #define _IIC_H_
 
+typedef enum{
+  IO_UNK,
+  IO_MCP23008,
+  IO_MCP23017A, /* 16-pin chip is split into two 8-bit banks */
+  IO_MCP23017B,
+}iodev_e;
+
 int init_iic(void);
+//iodev_e dev_type(int devAddr);
 int connect_iic(int devAddr);
-void poll_iic(int chip_addr, int regno);
-void test_iic(void);
+void poll_iic(int xio);
+int write_iic(int devAddr, int regno, char *buf, int n);
+void test_iic(int devAddr);
 void close_iic(void);
 
 #endif

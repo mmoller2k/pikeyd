@@ -35,7 +35,6 @@
 #include "daemon.h"
 #include "uinput.h"
 
-static int sendKey(int key, int value);
 static int sendRel(int dx, int dy);
 static int sendSync(void);
 
@@ -147,7 +146,7 @@ int close_uinput(void)
   return 0;
 }
 
-static int sendKey(int key, int value)
+int sendKey(int key, int value)
 {
   memset(&uidev_ev, 0, sizeof(struct input_event));
   gettimeofday(&uidev_ev.time, NULL);
@@ -198,20 +197,20 @@ static int sendSync(void)
 int send_gpio_keys(int gpio, int value)
 {
   int k;
-  int c,n;
+  int xio;
   restart_keys();
   while( got_more_keys(gpio) ){
     k = get_next_key(gpio);
-    if(k<0x300){
+    if(is_xio(gpio) && value){ /* xio int-pin is active low */
+      xio = get_curr_xio_no();
+      poll_iic(xio);
+    }
+    else if(k<0x300){
       sendKey(k, value);
       if(value && got_more_keys(gpio)){
 	/* release the current key, so the next one can be pressed */
 	sendKey(k, 0);
       }
-    }
-    else if(is_xio(gpio)){
-      get_curr_xio(&c, &n);
-      poll_iic(c,n);
     }
   }
   return k;
