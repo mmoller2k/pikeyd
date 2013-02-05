@@ -199,6 +199,7 @@ int init_config(void)
       }
     }
     setup_xio(j);
+    test_iic(xio_dev[j].addr, xio_dev[j].regno);
   }
 
 
@@ -402,12 +403,16 @@ static void setup_xio(int xio)
 
   switch(xio_dev[xio].type){
   case IO_MCP23008:
-  case IO_MCP23017A:
     write_iic(addr, 0, cfg_dat, 7); 
     printf("Configuring MCP23008\n");
     break;
+  case IO_MCP23017A:
+    write_iic(addr, 0, cfg_dat, 7); 
+    printf("Configuring MCP23017 port A\n");
+    break;
   case IO_MCP23017B:
     write_iic(addr, 0x10, cfg_dat, 7); 
+    printf("Configuring MCP23017 port B\n");
     break;
   default:
     break;

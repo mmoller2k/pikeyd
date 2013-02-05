@@ -38,7 +38,7 @@ int init_iic(void);
 int connect_iic(int devAddr);
 void poll_iic(int xio);
 int write_iic(int devAddr, int regno, char *buf, int n);
-void test_iic(int devAddr);
+void test_iic(int devAddr, int regaddr);
 void close_iic(void);
 
 #endif

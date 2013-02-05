@@ -83,11 +83,11 @@ int write_iic(int devAddr, int regno, char *buf, int n)
 }
 
 
-void test_iic(int devAddr)
+void test_iic(int devAddr, int regaddr)
 {
   int i,n;
 
-  buffer[0] = 0;
+  buffer[0] = regaddr;
 
   connect_iic(devAddr);
 
@@ -102,7 +102,7 @@ void test_iic(int devAddr)
     perror("Error reading from i2c");
   }
   else{
-    printf("Read %d bytes\n",n);
+    printf("Read %d bytes from %02x/%02x\n",n, devAddr, regaddr);
     for(i=0;i<n;i++){
       printf("  %02x", (unsigned char)buffer[i]);
     }
