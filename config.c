@@ -199,7 +199,7 @@ int init_config(void)
       }
     }
     setup_xio(j);
-    test_iic(xio_dev[j].addr, xio_dev[j].regno);
+    test_iic(xio_dev[j].addr, xio_dev[j].regno & 0x10);
   }
 
 
