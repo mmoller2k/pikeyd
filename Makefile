@@ -1,7 +1,7 @@
 TARGET:=pikeyd
 
 #comment out the line below when _NOT_ cross compiling
-include crosscomp.rules
+#include crosscomp.rules
 
 ifneq ($(CROSS), yes)
 CC := gcc

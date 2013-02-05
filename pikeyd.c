@@ -72,6 +72,10 @@ int main(int argc, char *argv[])
     //test_uinput();
     if(joy_RPi_init()>=0){
 
+      if(!en_daemonize){
+	printf("Press ^C to exit.\n");
+      }
+
       for(;;){
 	joy_RPi_poll();
 	usleep(4000);

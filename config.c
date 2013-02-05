@@ -202,6 +202,9 @@ int init_config(void)
     test_iic(xio_dev[j].addr, xio_dev[j].regno & 0x10);
   }
 
+  printf("Polling %d GPIO pin(s).\n", num_gpios_used);
+  printf("Found %d I/O expander(s).\n", xio_count);
+  printf("Ready.\n");
 
   return 0;
 }
