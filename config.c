@@ -136,7 +136,7 @@ int init_config(void)
 		xio_dev[xio_count].regno = 0x09;
 	      }
 	      else if( !strncmp(xname, "MCP23017B", 9) ){
-		xio_dev[xio_count].type = IO_MCP23017A;
+		xio_dev[xio_count].type = IO_MCP23017B;
 		xio_dev[xio_count].regno = 0x19;
 	      }
 	      else{
