@@ -76,8 +76,10 @@ struct joydata_struct
   int num_buttons;
   int button_mask;
   int change_mask;
+  int xio_mask;
   int buttons[JOY_BUTTONS];
   int change[JOY_BUTTONS];
+  int is_xio[JOY_BUTTONS];
 } joy_data[1];
 
 int joy_RPi_init(void)
@@ -86,6 +88,7 @@ int joy_RPi_init(void)
   int Index;
   char Buffer[BUFF_SIZE];
   int n = gpios_used();
+  int xios = 0;
 
   for (Index = 0; Index < n; ++Index){
     sprintf(Buffer, "/sys/class/gpio/export");
@@ -109,6 +112,8 @@ int joy_RPi_init(void)
 	sprintf(GPIO_Filename[Index], "/sys/class/gpio/gpio%u/value", gpio_pin(Index));
       }
       AllMask |= (1 << gpio_pin(Index));
+      xios |= ( is_xio(gpio_pin(Index)) << gpio_pin(Index) );
+      joy_data[0].is_xio[Index] = is_xio(gpio_pin(Index));
     }
   }
 
@@ -155,6 +160,7 @@ int joy_RPi_init(void)
   joy_data[0].num_buttons = n;
   joy_data[0].num_axes = 0;
   joy_data[0].button_mask=0;
+  joy_data[0].xio_mask=xios;
 
   bounceCount=0;
 
@@ -214,6 +220,7 @@ void joy_RPi_poll(void)
       //printf("%08x\n", xGpio);
     }
     lastGpio = newGpio;
+    xGpio &= ~joy_data[Joystick].xio_mask; /* remove expanders from change monitor */
 
     if(bounceCount>=BOUNCE_TIME){
       joy_data[Joystick].button_mask = newGpio;
@@ -239,7 +246,18 @@ void joy_handle_event(void)
   int Joystick = 0;
   int Index;
 
+  /* handle all active irqs */
+  if(~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask){ /* if active ints exist */
+    //printf("XIO = %08x\n", ~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask);
+    for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
+      if( joy_data[Joystick].is_xio[Index] & joy_data[Joystick].buttons[Index]){
+	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
+      } 
+    }
+  }
+  /* handle normal gpios */
   if(joy_data[Joystick].change_mask){
+    //printf("GPIOs = %08x\n", joy_data[Joystick].button_mask);
     joy_data[Joystick].change_mask = 0;
     for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
       if( joy_data[Joystick].change[Index] ){
