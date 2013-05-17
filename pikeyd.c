@@ -102,7 +102,7 @@ static void showHelp(void)
 
 static void showVersion(void)
 {
-  printf("pikeyd 1.1 (Feb 2013)\n");
+  printf("pikeyd 1.2 (May 2013)\n");
   printf("The Universal Raspberry Pi GPIO keyboard daemon.\n");
   printf("Copyright (C) 2013 Michael Moller.\n");
   printf("This is free software; see the source for copying conditions.  There is NO\n");
