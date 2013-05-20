@@ -503,11 +503,11 @@ void handle_iic_event(int xio, int value)
       x = !!(ival & (1 << i)); /* is the pin high or low? */
       f = xval & (1 << i); /* has the pin changed? */
       if(f){
-	//printf("(%02x) sending %d/%d: %x=%d\n", ival, xio, i, k, x);
+	printf("(%02x) sending %d/%d: %x=%d\n", ival, xio, i, k, !x);
 	sendKey(k, !x); /* switch is active low */
-	if(x && got_more_xio_keys(xio, i)){
+	if((!x) && got_more_xio_keys(xio, i)){
 	  /* release the current key, so the next one can be pressed */
-	  //printf("sending %x=%d\n", k,x);
+	  printf("sending %x=%d\n", k,x);
 	  sendKey(k, 0);
 	}
       }

@@ -248,7 +248,7 @@ void joy_handle_event(void)
 
   /* handle all active irqs */
   if(~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask){ /* if active ints exist */
-    //printf("XIO = %08x\n", ~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask);
+    printf("XIO = %08x\n", ~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask);
     for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
       if( joy_data[Joystick].is_xio[Index] & joy_data[Joystick].buttons[Index]){
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
@@ -262,7 +262,7 @@ void joy_handle_event(void)
     for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
       if( joy_data[Joystick].change[Index] ){
 	joy_data[Joystick].change[Index] = 0;
-	//printf("Button %d = %d\n", Index, joy_data[Joystick].buttons[Index]);
+	printf("Button %d = %d\n", Index, joy_data[Joystick].buttons[Index]);
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
       } 
     }

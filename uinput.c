@@ -153,6 +153,7 @@ int sendKey(int key, int value)
   uidev_ev.type = EV_KEY;
   uidev_ev.code = key;
   uidev_ev.value = value;
+  printf("sendKey: %d = %d\n", key, value);
   if(write(uidev_fd, &uidev_ev, sizeof(struct input_event)) < 0)
     die("error: write");
 
