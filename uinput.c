@@ -40,6 +40,7 @@ static int sendSync(void);
 
 static struct input_event     uidev_ev;
 static int uidev_fd;
+static keyinfo_s lastkey;
 
 #define die(str, args...) do { \
         perror(str); \
@@ -205,6 +206,7 @@ int send_gpio_keys(int gpio, int value)
     if(is_xio(gpio) && value){ /* xio int-pin is active low */
       xio = get_curr_xio_no();
       poll_iic(xio);
+      last_iic_key(&lastkey);
     }
     else if(k<0x300){
       sendKey(k, value);
@@ -212,7 +214,15 @@ int send_gpio_keys(int gpio, int value)
 	/* release the current key, so the next one can be pressed */
 	sendKey(k, 0);
       }
+      lastkey.key = k;
+      lastkey.val = value;
     }
   }
   return k;
+}
+
+void get_last_key(keyinfo_s *kp)
+{
+  kp->key = lastkey.key;
+  kp->val = lastkey.val;
 }

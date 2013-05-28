@@ -29,6 +29,7 @@
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
 #include "iic.h"
+#include "joy_RPi.h"
 
 static int fd=0;
 static char buffer[12];

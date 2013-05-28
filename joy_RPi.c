@@ -247,7 +247,7 @@ void joy_enable_repeat(void)
   doRepeat = 1;
 }
 
-static void joy_handle_repeat(int pin, int value)
+static void joy_handle_repeat(void)
 {
   const struct {
     int time[4];
@@ -261,13 +261,16 @@ static void joy_handle_repeat(int pin, int value)
   /* key repeat metrics: release after 80ms, press after 200ms, release after 40ms, press after 40ms */
 
   static int idx = -1;
-  static int prev_pin = -1;
+  static int prev_key = -1;
   static unsigned t_now = 0;
   static unsigned t_next = 0;
+  keyinfo_s ks;
+
+  get_last_key(&ks);
 
   if(doRepeat){
-    if(!value || (pin != prev_pin)){ /* restart on release or key change */
-      prev_pin = pin;
+    if(!ks.val || (ks.key != prev_key)){ /* restart on release or key change */
+      prev_key = ks.key;
       idx=-1;
       t_next = t_now;
     }
@@ -276,7 +279,7 @@ static void joy_handle_repeat(int pin, int value)
       t_next = t_now + mxkey.time[idx];
     }
     else if(t_now == t_next){
-      send_gpio_keys(pin, mxkey.value[idx]);
+      sendKey(ks.key, mxkey.value[idx]);
       idx = mxkey.next[idx];
       t_next = t_now + mxkey.time[idx];
     }
@@ -307,13 +310,10 @@ void joy_handle_event(void)
 	joy_data[Joystick].change[Index] = 0;
 	//printf("Button %d = %d\n", Index, joy_data[Joystick].buttons[Index]);
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
-	joy_handle_repeat(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
       } 
-      if( joy_data[Joystick].buttons[Index] ){
-	joy_handle_repeat(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
-      }
     }
   }
+  joy_handle_repeat();
 }
 
 
