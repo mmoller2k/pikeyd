@@ -309,6 +309,9 @@ void joy_handle_event(void)
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
 	joy_handle_repeat(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
       } 
+      if( joy_data[Joystick].buttons[Index] ){
+	joy_handle_repeat(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
+      }
     }
   }
 }
