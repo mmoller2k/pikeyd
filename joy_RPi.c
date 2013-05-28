@@ -277,8 +277,8 @@ static void joy_handle_repeat(int pin, int value)
     }
     else if(t_now == t_next){
       send_gpio_keys(pin, mxkey.value[idx]);
-      t_next = t_now + mxkey.time[idx];
       idx = mxkey.next[idx];
+      t_next = t_now + mxkey.time[idx];
     }
     t_now+=4; /* runs every 4 ms */
   }
