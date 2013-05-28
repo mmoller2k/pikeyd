@@ -68,6 +68,7 @@ static int AllMask;
 static int lastGpio=0;
 static int xGpio=0;
 static int bounceCount=0;
+static int doRepeat=0;
 
 struct joydata_struct
 {
@@ -241,6 +242,48 @@ void joy_RPi_poll(void)
   }
 }
 
+void joy_enable_repeat(void)
+{
+  doRepeat = 1;
+}
+
+static void joy_handle_repeat(int pin, int value)
+{
+  const struct {
+    int time[4];
+    int value[4];
+    int next[4];
+  }mxkey = {
+    {80, 200, 40, 40},
+    {0, 1, 0, 1},
+    {1, 2, 3, 2}
+  };
+  /* key repeat metrics: release after 80ms, press after 200ms, release after 40ms, press after 40ms */
+
+  static int idx = -1;
+  static int prev_pin = -1;
+  static unsigned t_now = 0;
+  static unsigned t_next = 0;
+
+  if(doRepeat){
+    if(!value || (pin != prev_pin)){ /* restart on release or key change */
+      prev_pin = pin;
+      idx=-1;
+      t_next = t_now;
+    }
+    else if(idx<0){ /* start new cycle */
+      idx = 0;
+      t_next = t_now + mxkey.time[idx];
+    }
+    else if(t_now == t_next){
+      send_gpio_keys(pin, mxkey.value[idx]);
+      t_next = t_now + mxkey.time[idx];
+      idx = mxkey.next[idx];
+    }
+    t_now+=4; /* runs every 4 ms */
+  }
+}
+
 void joy_handle_event(void)
 {
   int Joystick = 0;
@@ -248,7 +291,7 @@ void joy_handle_event(void)
 
   /* handle all active irqs */
   if(~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask){ /* if active ints exist */
-    printf("XIO = %08x\n", ~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask);
+    //printf("XIO = %08x\n", ~joy_data[Joystick].button_mask & joy_data[Joystick].xio_mask);
     for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
       if( joy_data[Joystick].is_xio[Index] & joy_data[Joystick].buttons[Index]){
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
@@ -262,8 +305,9 @@ void joy_handle_event(void)
     for (Index = 0; Index < joy_data[Joystick].num_buttons; ++Index){
       if( joy_data[Joystick].change[Index] ){
 	joy_data[Joystick].change[Index] = 0;
-	printf("Button %d = %d\n", Index, joy_data[Joystick].buttons[Index]);
+	//printf("Button %d = %d\n", Index, joy_data[Joystick].buttons[Index]);
 	send_gpio_keys(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
+	joy_handle_repeat(gpio_pin(Index), joy_data[Joystick].buttons[Index]);
       } 
     }
   }

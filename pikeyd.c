@@ -40,6 +40,9 @@ int main(int argc, char *argv[])
       en_daemonize = 1;
       //daemonize("/tmp", "/tmp/pikeyd.pid");
     }
+    if(!strcmp(argv[1], "-r")){
+      joy_enable_repeat();
+    }
     else if(!strcmp(argv[1], "-k")){
       daemonKill("/tmp/pikeyd.pid");
       exit(0);
@@ -95,6 +98,7 @@ static void showHelp(void)
   printf("Usage: pikeyd [option]\n");
   printf("Options:\n");
   printf("  -d    run as daemon\n");
+  printf("  -r    force key repeats\n");
   printf("  -k    try to terminate running daemon\n");
   printf("  -v    version\n");
   printf("  -h    this help\n");
@@ -102,7 +106,7 @@ static void showHelp(void)
 
 static void showVersion(void)
 {
-  printf("pikeyd 1.1 (Feb 2013)\n");
+  printf("pikeyd 1.3 (May 2013)\n");
   printf("The Universal Raspberry Pi GPIO keyboard daemon.\n");
   printf("Copyright (C) 2013 Michael Moller.\n");
   printf("This is free software; see the source for copying conditions.  There is NO\n");
