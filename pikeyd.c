@@ -34,24 +34,25 @@ static void showVersion(void);
 int main(int argc, char *argv[])
 {
   int en_daemonize = 0;
+  int i;
 
-  if(argc>1){
-    if(!strcmp(argv[1], "-d")){
+  for(i=1; i<argc; i++){
+    if(!strcmp(argv[i], "-d")){
       en_daemonize = 1;
       //daemonize("/tmp", "/tmp/pikeyd.pid");
     }
-    if(!strcmp(argv[1], "-r")){
-      joy_enable_repeat();
-    }
-    else if(!strcmp(argv[1], "-k")){
+    if(!strcmp(argv[i], "-k")){
       daemonKill("/tmp/pikeyd.pid");
       exit(0);
     }
-    else if(!strcmp(argv[1], "-v")){
+    if(!strcmp(argv[i], "-r")){
+      joy_enable_repeat();
+    }
+    if(!strcmp(argv[i], "-v")){
       showVersion();
       exit(0);
     }
-    else if(!strcmp(argv[1], "-h")){
+    if(!strcmp(argv[i], "-h")){
       showHelp();
       exit(0);
     }
