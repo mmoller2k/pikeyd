@@ -62,10 +62,10 @@ void poll_iic(int xio)
   iodev_e type;
   get_xio_parm(xio, &type, &chip_addr, &regno);
   buffer[0] = regno;
-  //connect_iic(chip_addr);
+  connect_iic(chip_addr);
   write(fd, buffer, 1);
   read(fd, buffer, 1);
-  //printf("iic: %02x\n", buffer[0]);
+  //printf("iic poll %d: %02x = %02x\n", xio, chip_addr, buffer[0]);
   handle_iic_event(xio, buffer[0]);
   //test_iic(chip_addr);
 }
