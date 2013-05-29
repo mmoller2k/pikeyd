@@ -33,6 +33,11 @@ typedef struct{
   int code;
 }key_names_s;
 
+typedef struct{
+  int key;
+  int val;
+}keyinfo_s;
+
 int init_config(void);
 void test_config(void);
 int get_event_key(int gpio, int idx);
@@ -49,6 +54,7 @@ void get_xio_parm(int xio, iodev_e *type, int *addr, int *regno);
 int get_next_xio_key(int xio, int gpio);
 void restart_xio_keys(int xio);
 void handle_iic_event(int xio, int value);
+void last_iic_key(keyinfo_s *kp);
 
 
 

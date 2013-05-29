@@ -28,6 +28,7 @@
 #include <string.h>
 #include "config.h"
 #include "iic.h"
+#include "joy_RPi.h"
 
 #define NUM_GPIO 32
 #define MAX_LN 128
@@ -70,6 +71,7 @@ static xio_dev_s xio_dev[MAX_XIO_DEVS];
 static int xio_count = 0;
 
 static int SP;
+static keyinfo_s KI;
 
 int init_config(void)
 {
@@ -492,7 +494,7 @@ void handle_iic_event(int xio, int value)
 {
   int ival = value & xio_dev[xio].inmask;
   int xval = ival ^ xio_dev[xio].lastvalue;
-  int f,i,k,x;
+  int f,i,k=0,x;
 
   xio_dev[xio].lastvalue = ival;
 
@@ -500,12 +502,13 @@ void handle_iic_event(int xio, int value)
     restart_xio_keys(xio);
     while(got_more_xio_keys(xio, i)){
       k = get_next_xio_key(xio, i);
-      x = !!(ival & (1 << i)); /* is the pin high or low? */
+      x = !(ival & (1 << i)); /* is the pin high or low? */
       f = xval & (1 << i); /* has the pin changed? */
       if(f){
 	//printf("(%02x) sending %d/%d: %x=%d\n", ival, xio, i, k, x);
-	sendKey(k, !x); /* switch is active low */
-	if((!x) && got_more_xio_keys(xio, i)){
+	sendKey(k, x); /* switch is active low */
+	KI.key = k; KI.val = x;
+	if(x && got_more_xio_keys(xio, i)){
 	  /* release the current key, so the next one can be pressed */
 	  //printf("sending %x=%d\n", k,x);
 	  sendKey(k, 0);
@@ -516,4 +519,11 @@ void handle_iic_event(int xio, int value)
   }
   //printf("handler exit\n");
 }
+
+void last_iic_key(keyinfo_s *kp)
+{
+  kp->key = KI.key;
+  kp->val = KI.val;
+}
+
 

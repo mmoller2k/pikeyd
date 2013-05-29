@@ -68,6 +68,7 @@ static int AllMask;
 static int lastGpio=0;
 static int xGpio=0;
 static int bounceCount=0;
+static int doRepeat=0;
 
 struct joydata_struct
 {
@@ -241,6 +242,51 @@ void joy_RPi_poll(void)
   }
 }
 
+void joy_enable_repeat(void)
+{
+  doRepeat = 1;
+}
+
+static void joy_handle_repeat(void)
+{
+  const struct {
+    int time[4];
+    int value[4];
+    int next[4];
+  }mxkey = {
+    {80, 200, 40, 40},
+    {0, 1, 0, 1},
+    {1, 2, 3, 2}
+  };
+  /* key repeat metrics: release after 80ms, press after 200ms, release after 40ms, press after 40ms */
+
+  static int idx = -1;
+  static int prev_key = -1;
+  static unsigned t_now = 0;
+  static unsigned t_next = 0;
+  keyinfo_s ks;
+
+  get_last_key(&ks);
+
+  if(doRepeat){
+    if(!ks.val || (ks.key != prev_key)){ /* restart on release or key change */
+      prev_key = ks.key;
+      idx=-1;
+      t_next = t_now;
+    }
+    else if(idx<0){ /* start new cycle */
+      idx = 0;
+      t_next = t_now + mxkey.time[idx];
+    }
+    else if(t_now == t_next){
+      sendKey(ks.key, mxkey.value[idx]);
+      idx = mxkey.next[idx];
+      t_next = t_now + mxkey.time[idx];
+    }
+    t_now+=4; /* runs every 4 ms */
+  }
+}
+
 void joy_handle_event(void)
 {
   int Joystick = 0;
@@ -267,6 +313,7 @@ void joy_handle_event(void)
       } 
     }
   }
+  joy_handle_repeat();
 }
 
 
