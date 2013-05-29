@@ -59,6 +59,8 @@ int init_uinput(void)
 
   if(ioctl(fd, UI_SET_EVBIT, EV_KEY) < 0)
     die("error: ioctl");
+  if(ioctl(fd, UI_SET_EVBIT, EV_REP) < 0)
+    die("error: ioctl");
   if(ioctl(fd, UI_SET_KEYBIT, BTN_LEFT) < 0)
     die("error: ioctl");
 
