@@ -1,6 +1,6 @@
 /**** daemon.c *****************************/
 /* M. Moller   2013-01-16                  */
-/*   Univeral RPi GPIO keyboard daemon      */
+/*   Universal RPi GPIO keyboard daemon    */
 /*******************************************/
 
 /*
