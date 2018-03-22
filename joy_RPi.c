@@ -40,8 +40,6 @@
 
 #if defined RPI_JOYSTICK
 
-#define GPIO_PERI_BASE        0x20000000
-#define GPIO_BASE             (GPIO_PERI_BASE + 0x200000)
 #define BLOCK_SIZE            (4 * 1024)
 #define PAGE_SIZE             (4 * 1024)
 #define GPIO_ADDR_OFFSET      13
@@ -120,9 +118,9 @@ int joy_RPi_init(void)
 
   GPIO = NULL;
   GpioMemory = NULL;
-  if((GpioFile = open("/dev/mem", O_RDWR | O_SYNC)) < 0){
-    perror("/dev/mem");
-    printf("Failed to open memory\n");
+  if((GpioFile = open("/dev/gpiomem", O_RDWR | O_SYNC)) < 0){
+    perror("/dev/gpiomem");
+    printf("Failed to open GPIO memory\n");
     return -1;
   }
   else if(!(GpioMemory = malloc(BLOCK_SIZE + PAGE_SIZE - 1))){
@@ -142,7 +140,7 @@ int joy_RPi_init(void)
 				    PROT_READ | PROT_WRITE,
 				    MAP_SHARED | MAP_FIXED, 
 				    GpioFile, 
-				    GPIO_BASE
+				    0
 				    )
 	       ) < 0){
       perror("mmap");
